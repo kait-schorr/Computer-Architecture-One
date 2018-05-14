@@ -115,7 +115,7 @@ class CPU {
         this.hlt();
         break;
       case "10101010":
-        alu("MUL", next1, next2);
+        this.alu("MUL", next1, next2);
         break;
       default:
         this.hlt();
@@ -127,8 +127,8 @@ class CPU {
     // can be 1, 2, or 3 bytes long. Hint: the high 2 bits of the
     // instruction byte tells you how many bytes follow the instruction byte
     // for any particular instruction.
-    let increment = parseInt(this.decimalToBinary(IR).slice(0, 2), 2) + 1;
-    this.PC += increment;
+
+    this.PC += (IR >> 6) + 1;
 
     // !!! IMPLEMENT ME
   }
