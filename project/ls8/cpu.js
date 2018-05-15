@@ -2,6 +2,37 @@
  * LS-8 v2.0 emulator skeleton code
  */
 
+// Constants for instructions
+const ADD = 0b10101000;
+const AND = 0b10110011;
+const CALL = 0b01001000;
+const CMP = 0b10100000;
+const DEC = 0b01111001;
+const DIV = 0b10101011;
+const HLT = 0b00000001;
+const INC = 0b01111000;
+const IRET = 0b00001011;
+const JEQ = 0b01010001;
+const JGT = 0b01010100;
+const JLT = 0b01010011;
+const JMP = 0b01010000;
+const JNE = 0b01010010;
+const LD = 0b10011000;
+const LDI = 0b10011001;
+const MOD = 0b10101100;
+const MUL = 0b10101010;
+const NOP = 0b00000000;
+const NOT = 0b01110000;
+const OR = 0b10110001;
+const POP = 0b01001100;
+const PRA = 0b01000010;
+const PRN = 0b01000011;
+const PUSH = 0b01001101;
+const RET = 0b00001001;
+const ST = 0b10011010;
+const SUB = 0b10101001;
+const XOR = 0b10110010;
+
 /**
  * Class for simulating a simple Computer (CPU & memory)
  */
@@ -13,21 +44,14 @@ class CPU {
     this.ram = ram;
 
     this.reg = new Array(8).fill(0); // General-purpose registers R0-R7
+    //SP
+    this.reg[7] = 0xf4;
 
     // Special-purpose registers
     this.PC = 0; // Program Counter
+    this.FL = 0b00000000;
   }
-  binaryToDecimal(bin) {
-    return parseInt(bin, 10);
-  }
-  decimalToBinary(dec) {
-    let output = "";
-    let length = 8;
-    while (length--) {
-      output += (dec >> length) & 1;
-    }
-    return output;
-  }
+
   /**
    * Store value in memory address, useful for program loading
    */
@@ -51,12 +75,90 @@ class CPU {
     clearInterval(this.clock);
   }
 
+  //Helper functions
+  printStack() {
+    console.log("Stack: ", this.ram.read(this.reg[7]));
+  }
+
+  //Instruction functions
+  and(x, y) {
+    this.reg[x] = this.reg[x] & this.reg[y];
+  }
+  call(register) {
+    this.ram.write(this.reg[7] - 1, this.PC + 2);
+    this.reg[7]--;
+    this.PC = register;
+  }
+  cmp(regA, regB) {}
+  dec(reg) {
+    this.reg[reg]--;
+  }
   hlt() {
     this.stopClock();
     return;
   }
+  inc(reg) {
+    this.reg[reg]++;
+  }
+  int(reg) {
+    // Issue the interrupt number stored in the given register.
+    // This will set the _n_th bit in the IS register to the value in the given register.
+  }
+  iret() {
+    // Return from an interrupt handler.
+    // The following steps are executed:
+    // Registers R6-R0 are popped off the stack in that order.
+    // The FL register is popped off the stack.
+    // The return address is popped off the stack and stored in PC.
+    // Interrupts are re-enabled
+  }
+  jeq(reg) {
+    // If equal flag is set (true), jump to the address stored in the given register.
+  }
+  jgt(reg) {
+    // If greater-than flag is set (true), jump to the address stored in the given register.
+  }
+  jlt(reg) {
+    // If less-than flag is set (true), jump to the address stored in the given register.
+  }
+  jmp(reg) {
+    this.PC = reg;
+  }
+  jne(reg) {
+    // If E flag is clear (false, 0), jump to the address stored in the given register.
+  }
+  ld(regA, regB) {
+    //     Loads registerA with the value at the address stored in registerB.
+    // This opcode reads from memory.
+  }
   ldi(register, integer) {
-    this.reg[this.binaryToDecimal(register)] = integer;
+    this.reg[register] = integer;
+  }
+  not(reg) {}
+  pop(reg) {
+    // this.printStack();
+    this.reg[reg] = this.ram.read(this.reg[7]);
+    this.ram.write(this.reg[7], null);
+    this.reg[7]++;
+    // this.printStack();
+  }
+  pra(reg) {}
+  prn(register) {
+    console.log(this.reg[register]);
+  }
+  push(reg) {
+    // this.printStack();
+    // console.log("Pre SP", this.reg[7]);
+    this.reg[7]--;
+    // console.log("POST SP: ", this.reg[7]);
+    this.ram.write(this.reg[7], this.reg[reg]);
+    // this.printStack();
+  }
+  ret() {
+    this.pop(this.PC);
+  }
+  st(regA, regB) {
+    this.ram.write(regA, regB);
   }
   /**
    * ALU functionality
@@ -68,14 +170,22 @@ class CPU {
    *
    * op can be: ADD SUB MUL DIV INC DEC CMP
    */
-  prn(register) {
-    console.log(this.binaryToDecimal(this.reg[this.binaryToDecimal(register)]));
-  }
   alu(op, regA, regB) {
     switch (op) {
+      case "ADD":
+        this.reg[regA] = this.reg[regA] + this.reg[regB];
+        break;
+      case "DIV":
+        this.reg[regA] = this.reg[regA] / this.reg[regB];
+        break;
       case "MUL":
-        // !!! IMPLEMENT ME
         this.reg[regA] = this.reg[regA] * this.reg[regB];
+        break;
+      case "MOD":
+        this.reg[regA] = this.reg[regA] % this.reg[regB];
+        break;
+      case "SUB":
+        this.reg[regA] -= this.reg[regB];
         break;
     }
   }
@@ -92,7 +202,7 @@ class CPU {
     // !!! IMPLEMENT ME
 
     // Debugging output
-    console.log(`${this.PC}: ${IR.toString(2)}`);
+    // console.log(`${this.PC}: ${IR.toString(2)}`);
 
     // Get the two bytes in memory _after_ the PC in case the instruction
     // needs them.
@@ -104,18 +214,30 @@ class CPU {
     // Execute the instruction. Perform the actions for the instruction as
     // outlined in the LS-8 spec.
 
-    switch (this.decimalToBinary(IR)) {
-      case "10011001":
-        this.ldi(next1, next2);
+    switch (IR) {
+      case ADD:
+        this.add(next1, next2);
         break;
-      case "01000011":
-        this.prn(next1);
+      case AND:
+        this.and(next1, next2);
         break;
-      case "00000001":
+      case HLT:
         this.hlt();
         break;
-      case "10101010":
+      case LDI:
+        this.ldi(next1, next2);
+        break;
+      case MUL:
         this.alu("MUL", next1, next2);
+        break;
+      case POP:
+        this.pop(next1);
+        break;
+      case PRN:
+        this.prn(next1);
+        break;
+      case PUSH:
+        this.push(next1);
         break;
       default:
         this.hlt();
