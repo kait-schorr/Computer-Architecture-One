@@ -85,8 +85,10 @@ class CPU {
     this.reg[x] = this.reg[x] & this.reg[y];
   }
   call(register) {
-    console.log("RAM: ", this.ram.mem.slice(0, 30));
-    this.push(this.reg[this.PC + 2]);
+    // console.log("RAM: ", this.ram.mem.slice(0, 30));
+    // console.log("Next Instruction: ", this.ram.read(this.PC + 2));
+    this.reg[7]--;
+    this.ram.write(this.reg[7], this.PC + 2);
     this.PC = this.reg[register];
   }
   cmp(regA, regB) {}
@@ -155,7 +157,7 @@ class CPU {
     // this.printStack();
   }
   ret() {
-    this.PC = this.ram.read[this.reg[7]];
+    this.PC = this.ram.read(this.reg[7]);
     this.reg[7]++;
   }
   st(regA, regB) {
@@ -195,10 +197,10 @@ class CPU {
    * Advances the CPU one cycle
    */
   tick() {
-    console.log("REGISTER: ", this.reg);
-    console.log("PC: ", this.PC);
-    console.log("SP: ", this.reg[7]);
-    console.log(ADD);
+    // console.log("REGISTER: ", this.reg);
+    // console.log("PC: ", this.PC);
+    // console.log("SP: ", this.reg[7]);
+    // console.log(LDI);
     // Load the instruction register (IR--can just be a local variable here)
     // from the memory address pointed to by the PC. (I.e. the PC holds the
     // index into memory of the instruction that's about to be executed
