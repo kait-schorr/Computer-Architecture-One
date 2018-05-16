@@ -85,9 +85,9 @@ class CPU {
     this.reg[x] = this.reg[x] & this.reg[y];
   }
   call(register) {
-    this.ram.write(this.reg[7] - 1, this.PC + 2);
-    this.reg[7]--;
-    this.PC = register;
+    console.log("RAM: ", this.ram.mem.slice(0, 30));
+    this.push(this.reg[this.PC + 2]);
+    this.PC = this.reg[register];
   }
   cmp(regA, regB) {}
   dec(reg) {
@@ -155,7 +155,8 @@ class CPU {
     // this.printStack();
   }
   ret() {
-    this.pop(this.PC);
+    this.PC = this.ram.read[this.reg[7]];
+    this.reg[7]++;
   }
   st(regA, regB) {
     this.ram.write(regA, regB);
@@ -194,6 +195,10 @@ class CPU {
    * Advances the CPU one cycle
    */
   tick() {
+    console.log("REGISTER: ", this.reg);
+    console.log("PC: ", this.PC);
+    console.log("SP: ", this.reg[7]);
+    console.log(ADD);
     // Load the instruction register (IR--can just be a local variable here)
     // from the memory address pointed to by the PC. (I.e. the PC holds the
     // index into memory of the instruction that's about to be executed
@@ -216,7 +221,7 @@ class CPU {
 
     switch (IR) {
       case ADD:
-        this.add(next1, next2);
+        this.alu("ADD", next1, next2);
         break;
       case AND:
         this.and(next1, next2);
@@ -239,7 +244,14 @@ class CPU {
       case PUSH:
         this.push(next1);
         break;
+      case CALL:
+        this.call(next1);
+        break;
+      case RET:
+        this.ret();
+        break;
       default:
+        console.log("Unknown instruction. Halting");
         this.hlt();
     }
 
@@ -249,8 +261,9 @@ class CPU {
     // can be 1, 2, or 3 bytes long. Hint: the high 2 bits of the
     // instruction byte tells you how many bytes follow the instruction byte
     // for any particular instruction.
-
-    this.PC += (IR >> 6) + 1;
+    if (IR !== CALL && IR !== RET) {
+      this.PC += (IR >> 6) + 1;
+    }
 
     // !!! IMPLEMENT ME
   }
