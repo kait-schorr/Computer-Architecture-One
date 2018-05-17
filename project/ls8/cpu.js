@@ -52,6 +52,18 @@ class CPU {
     this.FL = 0b00000000;
   }
 
+  // Set Flag
+  setFlag(flag) {
+    const flags = {
+      EQ: 0b00000001,
+      GT: 0b00000010,
+      LT: 0b00000100
+    };
+    this.FL = this.FL & ~flags[flag];
+    this.FL = this.FL | flags[flag];
+    console.log("FLAG: ", this.FL);
+  }
+
   /**
    * Store value in memory address, useful for program loading
    */
@@ -91,7 +103,15 @@ class CPU {
     this.ram.write(this.reg[7], this.PC + 2);
     this.PC = this.reg[register];
   }
-  cmp(regA, regB) {}
+  cmp(regA, regB) {
+    if (this.reg[regA] === this.reg[regB]) {
+      this.setFlag("EQ");
+    } else if (this.reg[regA] < this.reg[regB]) {
+      this.setFlag("LT");
+    } else {
+      this.setFlag("GT");
+    }
+  }
   dec(reg) {
     this.reg[reg]--;
   }
@@ -116,18 +136,32 @@ class CPU {
   }
   jeq(reg) {
     // If equal flag is set (true), jump to the address stored in the given register.
+    if (this.FL === 1) {
+      this.jmp(reg);
+    }
   }
   jgt(reg) {
     // If greater-than flag is set (true), jump to the address stored in the given register.
+    if (this.FL === 2) {
+      this.jmp(reg);
+    }
   }
   jlt(reg) {
     // If less-than flag is set (true), jump to the address stored in the given register.
+    if (this.FL === 4) {
+      this.jmp(reg);
+    }
   }
   jmp(reg) {
+    this.reg[7]--;
+    this.ram.write(this.reg[7], this.PC);
     this.PC = reg;
   }
   jne(reg) {
     // If E flag is clear (false, 0), jump to the address stored in the given register.
+    if (this.FL === 0) {
+      this.jmp(reg);
+    }
   }
   ld(regA, regB) {
     //     Loads registerA with the value at the address stored in registerB.
@@ -228,6 +262,8 @@ class CPU {
       case AND:
         this.and(next1, next2);
         break;
+      case CMP:
+        this.cmp(next1, next2);
       case HLT:
         this.hlt();
         break;
